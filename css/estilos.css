@@ -1,0 +1,79 @@
+/* =========================================
+   ESTILOS PERSONALIZADOS
+   Proyecto: Billetera Escolar
+   ========================================= */
+
+/* 1. Animaciones */
+/* Esta clase hace que las vistas aparezcan suavemente */
+.fade-in { 
+    animation: fadeIn 0.4s ease-in-out; 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* 2. Componentes de Formulario (Para limpiar el HTML) */
+
+/* Estilo común para todos los inputs */
+.input-estandar {
+    width: 100%;
+    padding: 0.5rem; /* p-2 equiv */
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+    transition: all 0.2s;
+}
+
+.input-estandar:focus {
+    outline: none;
+    border-color: #3b82f6; /* blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Etiquetas en mayúsculas pequeñas */
+.label-upper {
+    font-size: 0.75rem; /* text-xs */
+    font-weight: 700;
+    color: #6b7280; /* gray-500 */
+    text-transform: uppercase;
+}
+
+/* 3. Botones Personalizados */
+
+/* Botón Azul (Login) */
+.btn-primario {
+    background-color: #2563eb; /* blue-600 */
+    color: white;
+    padding: 0.5rem 0;
+    border-radius: 0.25rem;
+    transition: background-color 0.3s;
+}
+.btn-primario:hover {
+    background-color: #1d4ed8; /* blue-700 */
+}
+
+/* Botón Verde (Registro) */
+.btn-verde {
+    background-color: #16a34a; /* green-600 */
+    color: white;
+    padding: 0.5rem 0;
+    border-radius: 0.25rem;
+    transition: background-color 0.3s;
+}
+.btn-verde:hover {
+    background-color: #15803d; /* green-700 */
+}
+
+/* Botón Indigo (Agregar Tarjeta) */
+.btn-indigo {
+    background-color: #4f46e5; /* indigo-600 */
+    color: white;
+    padding: 0.5rem 0;
+    border-radius: 0.25rem;
+    transition: background-color 0.3s;
+}
+.btn-indigo:hover {
+    background-color: #4338ca; /* indigo-700 */
+}

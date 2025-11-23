@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Billetera Escolar</title>
+    <!-- Estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i data-lucide="credit-card"></i>
+                <span class="text-xl font-bold">PagoEscolar</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 mt-4">
+        <section class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Crear Cuenta</h2>
+            
+            <form id="form-register" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                    <input type="text" id="reg-name" class="input-estandar" placeholder="Juan Pérez" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                    <input type="email" id="reg-email" class="input-estandar" placeholder="estudiante@escuela.edu" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input type="password" id="reg-pass" class="input-estandar" required>
+                </div>
+                <button type="submit" class="btn-verde w-full">Registrarse</button>
+            </form>
+
+            <p class="mt-4 text-center text-sm">
+                ¿Ya tienes cuenta? <a href="index.html" class="text-blue-600 hover:underline">Inicia sesión</a>
+            </p>
+        </section>
+    </main>
+
+    <!-- LÓGICA DE CONEXIÓN Y SEGURIDAD -->
+    <script src="js/security.js"></script>
+
+    <script>
+        lucide.createIcons();
+
+        document.getElementById('form-register').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById('reg-name').value;
+            const correo = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-pass').value;
+
+            try {
+                // 1. Enviar datos al servidor
+                const res = await fetch(API_URL + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, correo, password })
+                });
+
+                const json = await res.json();
+
+                if (res.ok) {
+                    // 2. Guardar la "Salt" para poder encriptar después
+                    if (json.salt) {
+                        localStorage.setItem('user_salt', json.salt);
+                    }
+                    alert('¡Registro exitoso! Ahora inicia sesión.');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Error: ' + (json.message || 'No se pudo registrar'));
+                }
+            } catch (error) {
+                console.error(error);
+                alert('No se pudo conectar con el servidor.');
+            }
+        });
+    </script>
+</body>
+</html>

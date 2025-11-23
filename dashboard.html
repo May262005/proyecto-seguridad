@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Tarjetas - Billetera Escolar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i data-lucide="credit-card"></i>
+                <span class="text-xl font-bold">PagoEscolar</span>
+            </div>
+            <div>
+                <button id="btn-logout" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 mt-4">
+        <section class="fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Mis Tarjetas</h2>
+                <span id="user-greeting" class="text-gray-600 bg-gray-200 px-3 py-1 rounded-full text-sm">Hola, Usuario</span>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                
+                <!-- Formulario Agregar Tarjeta -->
+                <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md h-fit">
+                    <h3 class="text-lg font-semibold mb-4 border-b pb-2">Nueva Tarjeta</h3>
+                    <form id="form-card" class="space-y-3">
+                        <div>
+                            <label class="label-upper">Número de Tarjeta</label>
+                            <input type="text" id="card-number" maxlength="16" class="input-estandar" placeholder="1234567812345678" required>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="w-1/2">
+                                <label class="label-upper">Expiración</label>
+                                <input type="date" id="card-date" class="input-estandar" required>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="label-upper">CCV</label>
+                                <input type="text" id="card-ccv" maxlength="4" class="input-estandar" placeholder="123" required>
+                            </div>
+                        </div>
+
+                        <!-- CAMPO DE SEGURIDAD -->
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <label class="label-upper text-red-500 font-bold">Confirma contraseña</label>
+                            <input type="password" id="confirm-pass" class="input-estandar border-red-200 focus:border-red-500 focus:ring-red-200" placeholder="Para cifrar y firmar" required>
+                            <p class="text-xs text-gray-400 mt-1">Tu contraseña cifrará la tarjeta y generará la firma digital.</p>
+                        </div>
+
+                        <button type="submit" class="btn-indigo w-full mt-2 flex justify-center gap-2">
+                            <i data-lucide="lock" class="w-4 h-4"></i> Agregar Segura
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tabla de Tarjetas -->
+                <div class="md:col-span-2 bg-white rounded-lg shadow-md overflow-hidden relative">
+                    
+                    <!-- BARRA DE ACCIÓN PARA MOSTRAR -->
+                    <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
+                        <h3 class="text-gray-700 font-bold">Tus Tarjetas Guardadas</h3>
+                        <button id="btn-load-cards" class="bg-blue-600 text-white text-xs px-3 py-2 rounded hover:bg-blue-700 flex items-center gap-2">
+                            <i data-lucide="eye"></i> Revelar Datos
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-600 uppercase font-medium">
+                                <tr>
+                                    <th class="p-4">Tarjeta</th>
+                                    <th class="p-4">Expira</th>
+                                    <th class="p-4 text-center">CCV</th>
+                                    <th class="p-4 text-center">Firma Digital</th>
+                                    <th class="p-4 text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cards-table-body">
+                                <tr>
+                                    <td colspan="5" class="p-8 text-center text-gray-400">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <i data-lucide="lock" class="w-8 h-8 text-gray-300"></i>
+                                            <span>Datos encriptados. Pulsa "Revelar Datos" para verlos.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/security.js"></script>
+
+    <script>
+        lucide.createIcons();
+
+        // 1. Verificaciones Iniciales
+        const token = localStorage.getItem('auth_token');
+        const salt = localStorage.getItem('user_salt');
+        const email = localStorage.getItem('user_email');
+
+        if (!token) window.location.href = 'index.html';
+        if (email) document.getElementById('user-greeting').innerText = 'Hola, ' + email;
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            localStorage.removeItem('auth_token');
+            window.location.href = 'index.html';
+        });
+
+        // =======================================================
+        // A. LÓGICA PARA GUARDAR (ENCRIPTAR Y FIRMAR)
+        // =======================================================
+        const formCard = document.getElementById('form-card');
+        formCard.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!salt) return alert('Error de seguridad: Falta SALT');
+
+            const numero = document.getElementById('card-number').value;
+            const fecha = document.getElementById('card-date').value;
+            const ccv = document.getElementById('card-ccv').value;
+            const passwordConfirm = document.getElementById('confirm-pass').value;
+
+            try {
+                const { key } = await deriveKeyFromPassword(passwordConfirm, salt);
+                const tarjetaData = JSON.stringify({ numero, ccv, fecha_expiracion: fecha });
+                const cifrado = await aesEncryptWithIv(tarjetaData, key);
+
+                const res = await fetch(API_URL + '/tarjetas/guardar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({
+                        payload_encrypted: cifrado.encryptedBase64,
+                        iv: cifrado.ivBase64,
+                        fecha_expiracion: fecha,
+                        password: passwordConfirm
+                    })
+                });
+
+                const json = await res.json();
+                if (res.ok) {
+                    alert('¡Guardada con éxito y firmada digitalmente!\n\n' + 
+                          (json.firma ? 'Firma: ' + json.firma : ''));
+                    formCard.reset();
+                    document.getElementById('cards-table-body').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Datos actualizados. Pulsa Revelar de nuevo.</td></tr>';
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error al encriptar y firmar: ' + error.message);
+            }
+        });
+
+        // =======================================================
+        // B. LÓGICA PARA LEER Y VERIFICAR FIRMAS
+        // =======================================================
+        const btnLoad = document.getElementById('btn-load-cards');
+        
+        btnLoad.addEventListener('click', async () => {
+            const password = prompt("🔐 SEGURIDAD REQUERIDA\nIngresa tu contraseña para desencriptar tus tarjetas:");
+            if (!password) return;
+
+            try {
+                const { rawBase64 } = await deriveKeyFromPassword(password, salt);
+
+                const res = await fetch(API_URL + '/tarjetas/descifrar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ derivedKeyBase64: rawBase64 })
+                });
+
+                const tarjetas = await res.json();
+
+                if (res.ok) {
+                    renderTable(tarjetas);
+                } else {
+                    alert("Error: Contraseña incorrecta o fallo en servidor");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error al intentar desencriptar tarjetas.");
+            }
+        });
+
+        // Función para dibujar la tabla CON VERIFICACIÓN DE FIRMA
+        function renderTable(tarjetas) {
+            const tbody = document.getElementById('cards-table-body');
+            tbody.innerHTML = '';
+
+            if (tarjetas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">No tienes tarjetas guardadas.</td></tr>';
+                return;
+            }
+
+            tarjetas.forEach(t => {
+                const firmaValida = t.firma_valida === true;
+                const firmaIcon = firmaValida 
+                    ? '<i data-lucide="shield-check" class="w-4 h-4 inline text-green-600"></i>' 
+                    : '<i data-lucide="shield-alert" class="w-4 h-4 inline text-red-600"></i>';
+                
+                const firmaTexto = firmaValida 
+                    ? '<span class="text-green-600 text-xs font-medium">✓ Verificada</span>'
+                    : '<span class="text-red-600 text-xs font-medium">✗ No válida</span>';
+                
+                const estadoBadge = firmaValida
+                    ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">✓ Íntegra</span>'
+                    : '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">⚠ Modificada</span>';
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-blue-600 font-bold">${t.numero || 'Error'}</td>
+                    <td class="p-4 text-gray-600">${t.fecha_expiracion || ''}</td>
+                    <td class="p-4 text-center font-mono text-gray-500">${t.ccv || ''}</td>
+                    <td class="p-4 text-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="flex items-center gap-1">${firmaIcon} ${firmaTexto}</div>
+                            ${t.firma ? '<div class="text-xs text-gray-400 mt-1 truncate max-w-[150px]" title="' + t.firma + '">' + t.firma + '</div>' : ''}
+                        </div>
+                    </td>
+                    <td class="p-4 text-center">${estadoBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

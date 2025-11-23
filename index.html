@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Billetera Escolar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i data-lucide="credit-card"></i>
+                <span class="text-xl font-bold">PagoEscolar</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 mt-4">
+        <section class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Iniciar Sesión</h2>
+            
+            <!-- FORMULARIO CORRECTO (Sin action, con ID) -->
+            <form id="form-login" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                    <input type="email" id="login-email" class="input-estandar" placeholder="ejemplo@escuela.edu" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input type="password" id="login-pass" class="input-estandar" placeholder="******" required>
+                </div>
+                <button type="submit" class="btn-primario w-full">Entrar</button>
+            </form>
+
+            <p class="mt-4 text-center text-sm">
+                ¿No tienes cuenta? <a href="register.html" class="text-blue-600 hover:underline">Regístrate aquí</a>
+            </p>
+        </section>
+    </main>
+
+    <!-- IMPORTANTE: Conexión con el archivo de seguridad -->
+    <script src="js/security.js"></script>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        lucide.createIcons();
+
+        // Función para evitar errores si lo pruebas aquí en el chat
+        function safeRedirect(url) {
+            try {
+                window.location.href = url;
+            } catch (e) {
+                alert(`Login correcto. En XAMPP serías redirigido a: ${url}`);
+            }
+        }
+
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evita que la página se recargue sola
+
+            const correo = document.getElementById('login-email').value;
+            const password = document.getElementById('login-pass').value;
+
+            try {
+                // Conectar con el backend de tu amigo (Puerto 3000)
+                const res = await fetch(API_URL + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ correo, password })
+                });
+
+                const json = await res.json();
+
+                if (res.ok && json.access_token) {
+                    // Guardar credenciales de seguridad (Token)
+                    localStorage.setItem('auth_token', json.access_token);
+                    localStorage.setItem('user_email', correo);
+                    
+                    // Redirigir al sistema
+                    safeRedirect('dashboard.html');
+                } else {
+                    alert('Error: Credenciales incorrectas');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error al conectar con el servidor. Revisa la consola (F12).');
+            }
+        });
+    </script>
+</body>
+</html>
