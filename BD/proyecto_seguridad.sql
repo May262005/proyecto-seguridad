@@ -3,26 +3,39 @@ CREATE DATABASE IF NOT EXISTS proyecto_escolar;
 USE proyecto_escolar;
 
 -- 2. Tabla de Usuarios
--- Aquí guardaremos la información para el Login
 CREATE TABLE usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     nombre_completo VARCHAR(100) NOT NULL,
-    correo VARCHAR(100) UNIQUE NOT NULL,  -- El correo no se puede repetir
-    contrasena VARCHAR(50) NOT NULL,      -- En práctica escolar se suele usar texto simple
+    correo VARCHAR(100) UNIQUE NOT NULL,
+    contrasena VARCHAR(255) NOT NULL,           -- Hash bcrypt (más largo)
+    salt VARCHAR(64) NOT NULL,                   -- Salt para derivar clave AES
+    clave_publica TEXT,                          -- Clave pública RSA (PEM)
+    clave_privada_cifrada TEXT,                  -- Clave privada RSA cifrada con AES
     fecha_registro DATE DEFAULT (CURRENT_DATE)
 );
 
--- 3. Tabla de Tarjetas
--- Relacionada con el usuario mediante 'id_usuario'
+-- 3. Tabla de Tarjetas (con cifrado y firma digital)
 CREATE TABLE tarjetas (
     id_tarjeta INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT NOT NULL,              -- Llave foránea (FK)
-    numero_tarjeta VARCHAR(16) NOT NULL,  -- VARCHAR es mejor que INT para números largos
-    ccv VARCHAR(4) NOT NULL,              -- Código de seguridad (3 o 4 dígitos)
-    fecha_expiracion DATE NOT NULL,       -- Formato YYYY-MM-DD (ej: 2028-12-01)
+    id_usuario INT NOT NULL,
     
-    -- Definimos la relación: Una tarjeta pertenece a un usuario
+    -- Campos cifrados (BLOB para datos binarios)
+    numero_tarjeta BLOB NOT NULL,                -- JSON cifrado con AES (número, ccv, etc.)
+    ccv BLOB,                                    -- Ya no se usa (datos en numero_tarjeta)
+    iv BLOB NOT NULL,                            -- Vector de inicialización para AES
+    
+    -- Fecha en texto plano (para consultas)
+    fecha_expiracion DATE NOT NULL,
+    
+    -- Firma digital
+    firma TEXT,                                  -- Firma RSA en base64
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Relación con usuario
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
-    ON DELETE CASCADE -- Si borras al usuario, se borran sus tarjetas automáticamente
+    ON DELETE CASCADE
 );
 
+-- Índices para mejorar rendimiento
+CREATE INDEX idx_tarjetas_usuario ON tarjetas(id_usuario);
+CREATE INDEX idx_usuarios_correo ON usuarios(correo);
